@@ -44,6 +44,7 @@ import { ScheduleModule } from './schedule/schedule.module';
         database: config.get('DB_DATABASE'),
         entities: [SubscriptionEntity],
         synchronize: true,
+        migrations: ['dist/migrations/*.js'],
       }),
     }),
     // MailerModule.forRootAsync({
