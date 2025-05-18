@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: weather-api-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: weatherdb
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - '5433:5432'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: weather-api-app
+    env_file:
+      - .env
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+      echo '⏳ Чекаємо на Postgres…' &&
+      until pg_isready -h \"$DB_HOST\" -p \"$DB_PORT\"; do sleep 2; done &&
+      echo '🚀 Міграції…' &&
+      npm run typeorm migration:run &&
+      echo '🏃‍♂️ Старт…' &&
+      node dist/main.js
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z db 5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
